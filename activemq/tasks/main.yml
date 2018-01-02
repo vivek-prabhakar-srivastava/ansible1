@@ -1,0 +1,66 @@
+---
+
+- name: Create a directory if it doesn't exist
+  file:
+    path: /disk2/
+    state: directory
+
+- name: Download activemq package
+  get_url:
+    url: https://archive.apache.org/dist/activemq/5.14.0/apache-activemq-5.14.0-bin.tar.gz
+    dest: /disk2/
+  ignore_errors: yes
+
+- name: Unarchive a file
+  unarchive:
+    src: /disk2/apache-activemq-5.14.0-bin.tar.gz
+    dest: /disk2
+    remote_src: yes
+
+- name: Rename a file
+  command: creates="/disk2/activemq" mv /disk2/apache-activemq-5.14.0 /disk2/activemq
+
+- name: Change file ownership, group and mode
+  file:
+    path: /etc/default/activemq
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Copy the conf file
+  template:
+    src: activemq-env.j2
+    dest: /etc/default/activemq
+    mode: 0644
+  notify: 
+    - restart activemq
+
+- name: Copy file from bin
+  template:
+    src: activemq.j2
+    dest: /etc/init.d/activemq
+    mode: 0755
+
+- name: Change file ownership,group and mode
+  file:
+    path: /etc/init.d/activemq
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create a directory
+  file:
+    path: /disk2/activemq-data
+    state: directory
+
+- name: Create directory under activemq-data
+  file:
+    path: /disk2/activemq-data/kahadb
+    state: directory
+
+- name: Ensure activemq service is running
+  service:
+    name: activemq
+    state: started
+    enabled: yes    
+
